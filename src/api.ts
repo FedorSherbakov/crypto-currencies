@@ -68,6 +68,8 @@ function loopCoinPricesUpdater() {
 }
 
 function startCoinPricesPooling() {
+  if (isCoinPricesPoolingActive) return;
+
   isCoinPricesPoolingActive = true;
   loopCoinPricesUpdater();
 }
@@ -84,6 +86,7 @@ export function subscribeToCoinPrice(coin: string, cb: CoinPriceSubscriber) {
   coinPriceHandlers.set(coin, [...subscribers, cb]);
 
   if (!isCoinPricesPoolingActive) {
+    // use debounce to wait for other subscriptions
     startCoinPricesPoolingDebounced();
   }
 }
