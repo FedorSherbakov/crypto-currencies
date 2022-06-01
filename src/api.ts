@@ -34,6 +34,7 @@ const COIN_PRICES_POOLING_INTERVAL = 1000;
 let isCoinPricesPoolingActive = false;
 let coinPricesPoolingTimeoutID: ReturnType<typeof setTimeout>;
 const coinPriceHandlers: Map<string, CoinPriceSubscriber[]> = new Map();
+let coinPricesPoolingController: AbortController;
 
 function getAbsoluteMediaURI(relativeURI: string) {
   return new URL(relativeURI, BASE_MEDIA_URI).href;
@@ -45,6 +46,7 @@ async function updateCoinPrices() {
       fsym: "USD",
       tsyms: Array.from(coinPriceHandlers.keys()).join(),
     },
+    signal: coinPricesPoolingController.signal,
   });
 
   Object.entries(res.data as { [key: string]: number }).forEach(
@@ -60,16 +62,22 @@ async function updateCoinPrices() {
 function loopCoinPricesUpdater() {
   if (!isCoinPricesPoolingActive) return;
 
-  updateCoinPrices().then(() => {
-    coinPricesPoolingTimeoutID = setTimeout(() => {
-      loopCoinPricesUpdater();
-    }, COIN_PRICES_POOLING_INTERVAL);
-  });
+  updateCoinPrices()
+    .then(() => {
+      if (!isCoinPricesPoolingActive) return;
+      coinPricesPoolingTimeoutID = setTimeout(() => {
+        loopCoinPricesUpdater();
+      }, COIN_PRICES_POOLING_INTERVAL);
+    })
+    .catch((err) => {
+      if (!axios.isCancel(err)) throw err;
+    });
 }
 
 function startCoinPricesPooling() {
   if (isCoinPricesPoolingActive) return;
 
+  coinPricesPoolingController = new AbortController();
   isCoinPricesPoolingActive = true;
   loopCoinPricesUpdater();
 }
@@ -79,6 +87,7 @@ const startCoinPricesPoolingDebounced = debounce(startCoinPricesPooling, 10);
 function stopCoinPricesPooling() {
   isCoinPricesPoolingActive = false;
   clearTimeout(coinPricesPoolingTimeoutID);
+  coinPricesPoolingController.abort();
 }
 
 export function subscribeToCoinPrice(coin: string, cb: CoinPriceSubscriber) {
