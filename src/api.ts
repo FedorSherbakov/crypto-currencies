@@ -150,3 +150,18 @@ export async function getCoinInfo(coin: string): Promise<CoinInfoExtended> {
     proofType: coinInfo.ProofType,
   };
 }
+
+export async function getCoinPriceHistory(coin: string) {
+  const res = await client.get("histoday", {
+    params: {
+      fsym: coin,
+      tsym: "USD",
+      limit: 7,
+    },
+  });
+
+  return res.data.Data.map((entry: { time: number; close: number }) => ({
+    x: entry.time * 1000,
+    y: entry.close,
+  }));
+}

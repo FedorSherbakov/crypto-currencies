@@ -14,21 +14,15 @@
     <el-card>
       <el-descriptions v-if="coinInfo != null" :column="1" border>
         <el-descriptions-item>
-          <template #label>
-            <div>Logo</div>
-          </template>
+          <template #label> Logo </template>
           <img :src="coinInfo.imageUrl" :alt="coinInfo.fullName" width="40" />
         </el-descriptions-item>
         <el-descriptions-item>
-          <template #label>
-            <div>Full name</div>
-          </template>
+          <template #label> Full name </template>
           {{ coinInfo.fullName }}
         </el-descriptions-item>
         <el-descriptions-item>
-          <template #label>
-            <div>Price</div>
-          </template>
+          <template #label> Price </template>
           <el-skeleton
             :rows="0"
             style="width: 50px"
@@ -42,18 +36,15 @@
           </el-skeleton>
         </el-descriptions-item>
         <el-descriptions-item>
-          <template #label>
-            <div>Algorithm</div>
-          </template>
+          <template #label> Algorithm </template>
           {{ coinInfo.algorithm }}
         </el-descriptions-item>
         <el-descriptions-item>
-          <template #label>
-            <div>Proof Type</div>
-          </template>
+          <template #label> Proof Type </template>
           {{ coinInfo.proofType }}
         </el-descriptions-item>
       </el-descriptions>
+      <PriceChart :data="coinPriceHistory" :class="$style.chart" />
     </el-card>
   </BaseContainer>
 </template>
@@ -65,10 +56,12 @@ import type { Ref } from "vue";
 import { ElLoading } from "element-plus";
 import { ArrowLeft } from "@element-plus/icons-vue";
 import BaseContainer from "@/components/BaseContainer.vue";
+import PriceChart from "@/components/PriceChart.vue";
 import {
   getCoinInfo,
   subscribeToCoinPrice,
   unsubscribeFromCoinPrice,
+  getCoinPriceHistory,
 } from "@/api";
 import type { CoinInfoExtended } from "@/api";
 import { formatPrice } from "@/utils/formatPrice";
@@ -80,12 +73,17 @@ type TableCoinInfoExtended = CoinInfoExtended & {
 const { params } = useRoute();
 const coinName = params.coinName as string;
 const coinInfo: Ref<TableCoinInfoExtended | null> = ref(null);
+const coinPriceHistory = ref([]);
 
 let loadingInstance: ReturnType<typeof ElLoading.service>;
 
 function updatePrice(price: number) {
   if (coinInfo.value == null) return;
   coinInfo.value.price = price;
+}
+
+async function loadCoinPriceHistory() {
+  coinPriceHistory.value = await getCoinPriceHistory(coinName);
 }
 
 onMounted(async () => {
@@ -96,6 +94,7 @@ onMounted(async () => {
   };
   loadingInstance.close();
   subscribeToCoinPrice(coinName, updatePrice);
+  loadCoinPriceHistory();
 });
 
 onBeforeUnmount(() => {
@@ -113,5 +112,9 @@ loadingInstance = ElLoading.service();
 
 .backButton {
   margin-right: 10px;
+}
+
+.chart {
+  margin-top: 20px;
 }
 </style>
