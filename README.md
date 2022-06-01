@@ -1,4 +1,4 @@
-# ./
+# Crypto Currencies
 
 This template should help get you started developing with Vue 3 in Vite.
 
@@ -26,6 +26,8 @@ See [Vite Configuration Reference](https://vitejs.dev/config/).
 ```sh
 npm install
 ```
+
+### Set your API key in .env file
 
 ### Compile and Hot-Reload for Development
 
