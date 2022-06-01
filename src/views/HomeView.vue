@@ -10,7 +10,7 @@
   </BaseContainer>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import BaseContainer from "@/components/BaseContainer.vue";
 
