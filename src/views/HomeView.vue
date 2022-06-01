@@ -3,27 +3,34 @@
     <h1>Top crypto currencies</h1>
     <el-card>
       <el-table v-loading="isLoading" :data="coinsData" style="width: 100%">
-        <el-table-column label="Coin">
-          <template #default="{ row }">
-            <div :class="$style.colName">
-              <img :src="row.imageUrl" :alt="row.fullName" />
-              {{ row.fullName }}
-            </div>
-          </template>
+        <el-table-column label="Coin" v-slot="{ row }">
+          <div :class="$style.colName">
+            <img :src="row.imageUrl" :alt="row.fullName" />
+            {{ row.fullName }}
+          </div>
         </el-table-column>
-        <el-table-column label="Price">
+        <el-table-column label="Price" v-slot="{ row }">
+          <el-skeleton
+            :rows="0"
+            style="width: 50px"
+            animated
+            :loading="row.price == null"
+          >
+            <template #template>
+              <el-skeleton-item variant="text" />
+            </template>
+            <template #default> {{ formatPrice(row.price) }} </template>
+          </el-skeleton>
+        </el-table-column>
+        <el-table-column>
           <template #default="{ row }">
-            <el-skeleton
-              :rows="0"
-              style="width: 50px"
-              animated
-              :loading="row.price == null"
+            <router-link
+              :to="{ name: 'Details', params: { coinName: row.name } }"
+              custom
+              v-slot="{ navigate }"
             >
-              <template #template>
-                <el-skeleton-item variant="text" />
-              </template>
-              <template #default> {{ formatPrice(row.price) }} </template>
-            </el-skeleton>
+              <el-button size="small" @click="navigate">Details</el-button>
+            </router-link>
           </template>
         </el-table-column>
       </el-table>

@@ -2,7 +2,7 @@ import axios from "axios";
 import { debounce } from "lodash";
 const HTTP_URI = "https://min-api.cryptocompare.com/data";
 const BASE_MEDIA_URI = "https://www.cryptocompare.com";
-const API_KEY = import.meta.env.VITE_CRYPTOCOMPARE_API;
+const API_KEY = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY;
 
 type APICoinInfo = {
   FullName: string;
@@ -14,6 +14,11 @@ export type CoinInfo = {
   fullName: string;
   imageUrl: string;
   name: string;
+};
+
+export type CoinInfoExtended = CoinInfo & {
+  algorithm: string;
+  proofType: string;
 };
 
 export type CoinPriceSubscriber = (newPrice: number) => void;
@@ -29,6 +34,10 @@ const COIN_PRICES_POOLING_INTERVAL = 1000;
 let isCoinPricesPoolingActive = false;
 let coinPricesPoolingTimeoutID: ReturnType<typeof setTimeout>;
 const coinPriceHandlers: Map<string, CoinPriceSubscriber[]> = new Map();
+
+function getAbsoluteMediaURI(relativeURI: string) {
+  return new URL(relativeURI, BASE_MEDIA_URI).href;
+}
 
 async function updateCoinPrices() {
   const res = await client.get("price", {
@@ -70,10 +79,7 @@ function stopCoinPricesPooling() {
   clearTimeout(coinPricesPoolingTimeoutID);
 }
 
-export async function subscribeToCoinPrice(
-  coin: string,
-  cb: CoinPriceSubscriber
-) {
+export function subscribeToCoinPrice(coin: string, cb: CoinPriceSubscriber) {
   const subscribers = coinPriceHandlers.get(coin) || [];
   coinPriceHandlers.set(coin, [...subscribers, cb]);
 
@@ -82,7 +88,7 @@ export async function subscribeToCoinPrice(
   }
 }
 
-export async function unsubscribeFromCoinPrice(
+export function unsubscribeFromCoinPrice(
   coin: string,
   cb: CoinPriceSubscriber
 ) {
@@ -110,6 +116,25 @@ export async function getTopCoins(): Promise<CoinInfo[]> {
   return res.data.Data.map(({ CoinInfo }: { CoinInfo: APICoinInfo }) => ({
     name: CoinInfo.Name,
     fullName: CoinInfo.FullName,
-    imageUrl: new URL(CoinInfo.ImageUrl, BASE_MEDIA_URI).href,
+    imageUrl: getAbsoluteMediaURI(CoinInfo.ImageUrl),
   }));
+}
+
+export async function getCoinInfo(coin: string): Promise<CoinInfoExtended> {
+  const res = await client.get("coin/generalinfo", {
+    params: {
+      fsyms: coin,
+      tsym: "USD",
+    },
+  });
+
+  const coinInfo = res.data.Data[0].CoinInfo;
+
+  return {
+    name: coin,
+    algorithm: coinInfo.Algorithm,
+    fullName: coinInfo.FullName,
+    imageUrl: getAbsoluteMediaURI(coinInfo.ImageUrl),
+    proofType: coinInfo.ProofType,
+  };
 }
